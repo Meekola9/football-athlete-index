@@ -443,30 +443,28 @@ export async function saveCloudData(teamId: string, input: AppData): Promise<voi
     new Set(data.events.map((event) => event.id)),
   )
 
-  // Playmaker/Havoc plays sync separately and non-fatally: a team that has not
-  // yet run the play_events migration keeps saving athletes and testing data.
-  try {
-    const playRows = (data.plays ?? []).map((play) => ({
-      team_id: teamId,
-      id: play.id,
-      athlete_id: play.athleteId,
-      type: play.type,
-      play_date: play.date,
-      opponent: nullable(play.opponent),
-      note: nullable(play.note),
-      created_at: play.createdAt ?? now,
-    }))
-    const oldPlays = await existingIds('play_events', teamId)
-    if (playRows.length > 0) {
-      const { error } = await db
-        .from('play_events')
-        .upsert(playRows, { onConflict: 'team_id,id' })
-      throwIfError(error, 'Could not save plays')
-    }
-    await deleteMissing('play_events', teamId, oldPlays, new Set((data.plays ?? []).map((play) => play.id)))
-  } catch {
-    // play_events table not provisioned yet — skip play sync this save.
+  // Playmaker/Havoc entries affect athlete ratings, badges, and leaderboards,
+  // so a failed write must fail the snapshot save. Silently treating a 403 or
+  // schema error as success makes the play appear briefly and disappear after
+  // the next cloud reload.
+  const playRows = (data.plays ?? []).map((play) => ({
+    team_id: teamId,
+    id: play.id,
+    athlete_id: play.athleteId,
+    type: play.type,
+    play_date: play.date,
+    opponent: nullable(play.opponent),
+    note: nullable(play.note),
+    created_at: play.createdAt ?? now,
+  }))
+  const oldPlays = await existingIds('play_events', teamId)
+  if (playRows.length > 0) {
+    const { error } = await db
+      .from('play_events')
+      .upsert(playRows, { onConflict: 'team_id,id' })
+    throwIfError(error, 'Could not save plays')
   }
+  await deleteMissing('play_events', teamId, oldPlays, new Set((data.plays ?? []).map((play) => play.id)))
 
   // Film breakdowns sync separately and non-fatally, same as plays: a team that
   // has not run the film_plays migration keeps saving everything else.

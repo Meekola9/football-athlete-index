@@ -20,4 +20,10 @@ test('log a play and the Havoc meter and Level Up board update', async ({ page }
   await expect(page.getByRole('heading', { name: 'Level Up' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Recent Plays' })).toBeVisible()
   await expect(page.getByText('Interception', { exact: true })).toBeVisible()
+
+  // A logged play must survive a page reload, not just update React state.
+  await page.reload()
+  await expect(page.getByRole('heading', { name: /Playmakers & Havoc/ })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByText('Interception', { exact: true })).toBeVisible()
+  await expect(havocTotal).toHaveText(/^[5-9]|\d{2,}$/, { timeout: 5000 })
 })
