@@ -14,6 +14,7 @@ import {
   type LineupUnit,
 } from '../lib/lineup'
 import { useStore } from '../store/useStore'
+import { rosterForScope } from '../lib/rosterScope'
 import type { AthleteResult } from '../types'
 
 const LINEUP_STORAGE_KEY = 'fai:lineup:v1'
@@ -66,7 +67,7 @@ function resultMap(results: AthleteResult[]): Map<string, AthleteResult> {
 }
 
 export default function Lineup() {
-  const { data, resultsForEvent, resultByAthlete, canEdit, viewerMode } = useStore()
+  const { data, resultsForEvent, canEdit, viewerMode } = useStore()
   const access = useAccountAccess()
   const [unit, setUnit] = useState<LineupUnit>('defense')
   const [selectedSchemeIds, setSelectedSchemeIds] = useState<Record<LineupUnit, string>>({
@@ -81,18 +82,20 @@ export default function Lineup() {
     () => resultMap(resultsForEvent(SEASON_EVENT_ID)),
     [resultsForEvent],
   )
+  const activeRoster = useMemo(() => rosterForScope(data.athletes, data.sessions), [data.athletes, data.sessions])
+  const roster = useMemo(() => activeRoster.filter((athlete) => {
+    const result = seasonResults.get(athlete.id)
+    return result && result.current.scoreStatus !== 'insufficient'
+  }), [activeRoster, seasonResults])
   const ratings = useMemo(
-    () => new Map(data.athletes.map((athlete) => {
-      const result = seasonResults.get(athlete.id) ?? resultByAthlete.get(athlete.id)
-      return [athlete.id, result?.current.fai ?? 50] as const
-    })),
-    [data.athletes, resultByAthlete, seasonResults],
+    () => new Map(roster.map((athlete) => [athlete.id, seasonResults.get(athlete.id)!.current.fai])),
+    [roster, seasonResults],
   )
 
   const availableSchemes = schemesForUnit(unit)
   const scheme = availableSchemes.find((item) => item.id === selectedSchemeIds[unit]) ?? availableSchemes[0]
   const overrides = storedLineups[scheme.id] ?? EMPTY_LINEUP_OVERRIDES
-  const assignments = generateBestLineup(data.athletes, ratings, scheme, overrides)
+  const assignments = generateBestLineup(roster, ratings, scheme, overrides)
   const editingSlot = editingSlotId
     ? flatSlots(scheme).find((lineupSlot) => lineupSlot.id === editingSlotId)
     : undefined
@@ -108,7 +111,7 @@ export default function Lineup() {
       const summarySchemes = schemesForUnit(summaryUnit)
       const summaryScheme = summarySchemes.find((item) => item.id === selectedSchemeIds[summaryUnit]) ?? summarySchemes[0]
       const summaryAssignments = generateBestLineup(
-        data.athletes,
+        roster,
         ratings,
         summaryScheme,
         storedLineups[summaryScheme.id] ?? {},
@@ -120,7 +123,7 @@ export default function Lineup() {
         total: flatSlots(summaryScheme).length,
       }
     })
-  }, [data.athletes, ratings, selectedSchemeIds, storedLineups])
+  }, [roster, ratings, selectedSchemeIds, storedLineups])
 
   function updateScheme(nextSchemeId: string) {
     setSelectedSchemeIds((current) => ({ ...current, [unit]: nextSchemeId }))
@@ -181,7 +184,7 @@ export default function Lineup() {
           <div className="text-xs font-black uppercase tracking-[0.22em] text-fai">Personnel Board</div>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-chalk">Visual Lineup</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Build the depth chart from FAI performance, football position fit, and two-way roster roles.
+            Suggested depth chart using active athletes with 2026 testing. Provisional scores are included; confirm assignments with film and coaching judgment.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -195,6 +198,7 @@ export default function Lineup() {
           <button
             key={summary.unit}
             type="button"
+            aria-pressed={unit === summary.unit}
             onClick={() => setUnit(summary.unit)}
             className={`rounded-2xl border p-4 text-left transition ${unit === summary.unit ? 'border-fai bg-fai/10' : 'border-line bg-panel/80 hover:border-fai/40'}`}
           >
@@ -210,25 +214,13 @@ export default function Lineup() {
         ))}
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel p-1">
-        {(['offense', 'defense', 'special'] as LineupUnit[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setUnit(item)}
-            className={`min-w-max flex-1 rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wider transition ${unit === item ? 'bg-fai text-ink' : 'text-muted hover:bg-panel-2 hover:text-chalk'}`}
-          >
-            {unitLabel(item)}
-          </button>
-        ))}
-      </div>
-
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Card className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-panel-2/45 p-4">
             <div>
               <div className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">{unitLabel(unit)} scheme</div>
               <select
+                aria-label="Lineup scheme"
                 value={scheme.id}
                 onChange={(event) => updateScheme(event.target.value)}
                 className="mt-1 rounded-lg border border-line bg-ink px-3 py-2 text-sm font-black text-chalk outline-none focus:border-fai"
@@ -243,7 +235,7 @@ export default function Lineup() {
                 onClick={generateBest}
                 className="rounded-xl border border-fai/50 bg-fai/10 px-4 py-2 text-sm font-black text-fai hover:bg-fai/20"
               >
-                ◉ Generate Best Lineup
+                ◉ Regenerate Suggestions
               </button>
             )}
           </div>
@@ -262,7 +254,7 @@ export default function Lineup() {
                 >
                   {row.map((lineupSlot) => {
                     const assignment = assignments[lineupSlot.id]
-                    const depth = candidatesForSlot(data.athletes, ratings, lineupSlot)
+                    const depth = candidatesForSlot(roster, ratings, lineupSlot)
                       .filter((candidate) => candidate.athlete.id !== assignment?.athlete.id)
                       .slice(0, 2)
                     return (
@@ -284,7 +276,7 @@ export default function Lineup() {
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-xs font-black text-chalk">{assignment.athlete.name}</div>
                                 <div className="mt-0.5 truncate text-[10px] font-bold text-muted">{assignment.athlete.position}{assignment.athlete.secondaryPosition ? ` / ${assignment.athlete.secondaryPosition}` : ''}</div>
-                                <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-fai">{assignment.fitLabel} · {assignment.fit}%</div>
+                                <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-fai">{overrides[lineupSlot.id] ? 'Coach selected' : 'Suggested'} · {assignment.fitLabel} · {assignment.fit}%</div>
                               </div>
                             </div>
                             <div className="space-y-1 border-t border-white/10 bg-ink/45 px-2.5 py-2">
@@ -341,7 +333,7 @@ export default function Lineup() {
           <Card className="p-4">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-muted">Roster health</div>
             <div className="mt-3 text-sm text-muted">
-              {data.athletes.length} athletes available · {data.athletes.filter((athlete) => ratings.get(athlete.id) !== 50).length} with rated testing data
+              {roster.length} athletes with 2026 ratings · {activeRoster.length - roster.length} active athletes need testing before lineup suggestions
             </div>
             <Link to="/athletes" className="mt-3 inline-flex rounded-lg border border-line px-3 py-2 text-xs font-black text-chalk hover:border-fai hover:text-fai">Open roster →</Link>
           </Card>
@@ -359,7 +351,7 @@ export default function Lineup() {
               <button type="button" onClick={() => setEditingSlotId(undefined)} className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:text-chalk">✕</button>
             </div>
             <div className="max-h-[60vh] space-y-2 overflow-y-auto p-4">
-              {candidatesForSlot(data.athletes, ratings, editingSlot).map((candidate) => {
+              {candidatesForSlot(roster, ratings, editingSlot).map((candidate) => {
                 const active = assignments[editingSlot.id]?.athlete.id === candidate.athlete.id
                 const usedAt = Object.values(assignments).find((assignment) => assignment.athlete.id === candidate.athlete.id)?.slot.label
                 return (
@@ -379,7 +371,7 @@ export default function Lineup() {
                   </button>
                 )
               })}
-              {!candidatesForSlot(data.athletes, ratings, editingSlot).length && (
+              {!candidatesForSlot(roster, ratings, editingSlot).length && (
                 <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">No rostered athlete currently fits this position.</div>
               )}
             </div>

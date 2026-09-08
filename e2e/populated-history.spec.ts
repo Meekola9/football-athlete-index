@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('fresh install shows historical coverage and populated measurement rankings', async ({ page }) => {
-  await expect(page.getByText('Historical Data Coverage', { exact: true })).toBeVisible()
+  await expect(page.getByText('Historical data coverage · all seasons and alumni', { exact: true })).toBeVisible()
 
   const coverage = await page.evaluate(() => {
     const raw = localStorage.getItem('fai:data:v2')
@@ -42,10 +42,9 @@ test('fresh install shows historical coverage and populated measurement rankings
 
   await page.getByRole('link', { name: 'Leaderboards', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Rankings', exact: true })).toBeVisible()
-  await expect(page.getByText('Official FAI Rankings', { exact: true })).toBeVisible()
-  await expect(page.getByText('Available Test Rankings', { exact: true })).toBeVisible()
-
-  await page.getByRole('button', { name: 'Best 40-Yard Dash', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Testing season' })).toHaveValue('season-2026')
+  await page.getByRole('combobox', { name: 'Testing season' }).selectOption('')
+  await page.getByRole('combobox', { name: 'Ranking metric' }).selectOption({ label: 'Best 40-Yard Dash' })
   await expect(page.getByText('Available data', { exact: true })).toBeVisible()
   await expect(page.getByText(/ranked$/).first()).not.toHaveText('0 ranked')
   await expect(page.getByText('No verified measurements are available for this board.')).toHaveCount(0)

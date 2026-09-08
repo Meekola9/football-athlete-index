@@ -141,7 +141,7 @@ function HavocMeter({ total, fill, plays }: { total: number; fill: number; plays
           </div>
         </div>
         <div className="mt-3 text-center text-[11px] font-semibold uppercase tracking-wider text-muted">
-          {plays} disruptive {plays === 1 ? 'play' : 'plays'} logged
+          {plays} defensive impact {plays === 1 ? 'event' : 'events'} logged
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@ function PlaymakerMeter({ total, fill, plays }: { total: number; fill: number; p
               {shown}
             </div>
           </div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Explosive Plays</div>
+          <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Playmaker Points</div>
         </div>
 
         <div className="relative mt-6 h-3 w-full overflow-hidden rounded-full border border-line bg-black/50">
@@ -206,7 +206,7 @@ function PlaymakerMeter({ total, fill, plays }: { total: number; fill: number; p
           </div>
         </div>
         <div className="mt-3 text-center text-[11px] font-semibold uppercase tracking-wider text-muted">
-          {plays} explosive {plays === 1 ? 'play' : 'plays'} logged
+          {plays} offensive impact {plays === 1 ? 'event' : 'events'} logged
         </div>
       </div>
     </div>
@@ -262,8 +262,9 @@ function LevelCard({ item, rank }: { item: AthleteImpact; rank: number }) {
             {item.havocPoints > 0 && <Pill tone="down">💥 {item.havocPoints}</Pill>}
             {item.playmakerPoints > 0 && <Pill tone="up">⚡ {item.playmakerPoints}</Pill>}
             {item.boostPct > 0 && <Pill tone="gold">📈 +{item.boostPct}% overall</Pill>}
-            {item.efficiencyBoostPct > 0 && <Pill tone="up">🎯 {item.efficiency}% eff · +{item.efficiencyBoostPct}%</Pill>}
-            {item.efficiencyBoostPct < 0 && <Pill tone="down">🎯 {item.efficiency}% eff · {item.efficiencyBoostPct}%</Pill>}
+            {item.efficiencyBoostPct > 0 && <Pill tone="up">🎯 {item.efficiency}% positive impact · +{item.efficiencyBoostPct}%</Pill>}
+            {item.efficiencyBoostPct < 0 && <Pill tone="down">🎯 {item.efficiency}% positive impact · {item.efficiencyBoostPct}%</Pill>}
+            <span title="Positive points divided by the total magnitude of positive and negative points; based only on logged impact events.">{item.playCount} logged events</span>
             {item.negativePoints > 0 && <Pill tone="down">⚠️ −{item.negativePoints}</Pill>}
           </div>
         </div>
@@ -316,7 +317,7 @@ export default function Playmakers() {
     [data.plays],
   )
 
-  const havocLeaders = summary.athletes.filter((item) => item.havocPoints > 0)
+  const havocLeaders = summary.athletes.filter((item) => item.havocPoints > 0).sort((a, b) => b.havocPoints - a.havocPoints || a.athlete.name.localeCompare(b.athlete.name))
   const playLeaders = [...summary.athletes]
     .filter((item) => item.playmakerPoints > 0)
     .sort((a, b) => b.playmakerPoints - a.playmakerPoints)

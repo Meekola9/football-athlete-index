@@ -117,3 +117,13 @@ describe('lineup engine', () => {
     }
   })
 })
+
+
+it('reserves an edge and nose tackle for their listed positions before group fallback', () => {
+  const scheme = LINEUP_SCHEMES.find((item) => item.id === 'defense-425')!
+  const athletes = [athlete('nose', 'NT', 'DL'), athlete('edge', 'Jack', 'DL')]
+  const assignments = generateBestLineup(athletes, new Map([['nose', 99], ['edge', 60]]), scheme)
+  expect(assignments.jack.athlete.id).toBe('edge')
+  expect(assignments.nt.athlete.id).toBe('nose')
+  expect(assignments.dt).toBeUndefined()
+})

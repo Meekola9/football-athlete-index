@@ -172,7 +172,7 @@ export const STAT_GUIDE: readonly StatGuideEntry[] = [
     footballMeaning: 'Represents horizontal lower-body explosiveness and the ability to project the body forward from a static position.',
     interpretation: 'Higher is better. Measure from the takeoff line to the nearest landing point, normally the back heel.',
     caution: 'Arm swing, landing skill, footwear, surface, and familiarity can change the number. It does not directly measure blocking or tackling power.',
-    scoringNote: 'Averaged with Hang Clean Reps at Body Weight to form the Power category when both are available.',
+    scoringNote: 'Averaged with Power Clean Max (direct or estimated) to form the Power category when both are available.',
     searchTerms: ['horizontal power', 'explosiveness', 'jump distance'],
   },
   {
@@ -377,7 +377,7 @@ export const STAT_GUIDE: readonly StatGuideEntry[] = [
     section: 'category',
     direction: 'derived',
     category: 'Power',
-    meaning: 'A 0–100 position-adjusted average of Broad Jump and Hang Clean Reps at Body Weight when both are available.',
+    meaning: 'A 0–100 position-adjusted average of Broad Jump and Power Clean Max (direct or estimated) when both are available.',
     footballMeaning: 'Combines horizontal explosiveness with repeated relative power output.',
     interpretation: 'Higher is better. If only one applicable Power test is present, the provisional category uses the available score.',
     caution: 'The two tests have different technical demands, so coaches should still inspect each raw result separately.',

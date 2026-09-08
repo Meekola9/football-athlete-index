@@ -79,7 +79,7 @@ export default function PlayerStatsCard({ athlete }: { athlete: Athlete }) {
           )}
         </>
       ) : (
-        <div className="mt-2 text-sm text-muted">No stats logged yet.</div>
+        <div className="mt-2 text-sm text-muted">No box-score stats logged yet. Impact events and box-score statistics are recorded separately.</div>
       )}
 
       {canEdit && (

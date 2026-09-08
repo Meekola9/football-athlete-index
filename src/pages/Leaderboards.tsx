@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { rosterForScope, resultsForRoster, ROSTER_SEASON_ID } from '../lib/rosterScope'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
@@ -88,13 +89,15 @@ function firstPopulatedBoard(results: AthleteResult[]): string {
 
 export default function Leaderboards() {
   const { data, results, resultsForEvent } = useStore()
-  const [filters, setFilters] = usePageMemory<FilterState>('fai:rankings:filters', EMPTY_FILTERS)
+  const [filters, setFilters] = usePageMemory<FilterState>('fai:rankings:filters:v2', { ...EMPTY_FILTERS, eventId: ROSTER_SEASON_ID })
   const [boardId, setBoardId] = usePageMemory('fai:rankings:board', () => firstPopulatedBoard(results))
   usePageScrollMemory('fai:rankings:scroll')
 
   const selectedResults = useMemo(
-    () => (filters.eventId ? resultsForEvent(filters.eventId) : results),
-    [filters.eventId, resultsForEvent, results],
+    () => filters.eventId === ROSTER_SEASON_ID
+      ? resultsForRoster(resultsForEvent(filters.eventId), rosterForScope(data.athletes, data.sessions))
+      : (filters.eventId ? resultsForEvent(filters.eventId) : results),
+    [filters.eventId, resultsForEvent, results, data.athletes, data.sessions],
   )
   const filtered = useMemo(
     () => applyFilters(selectedResults, filters),
@@ -117,15 +120,15 @@ export default function Leaderboards() {
           </div>
           {selectedEvent && (
             <div className="mt-1 text-xs text-muted">
-              {selectedEvent.name} season · best mark per test that year
+              {selectedEvent.name} season · best mark per test that year{filters.eventId === ROSTER_SEASON_ID ? ' · active roster' : ' · historical roster'}
             </div>
           )}
         </div>
-        <FilterBar events={seasons} value={filters} onChange={setFilters} />
+        <FilterBar events={seasons} value={filters} onChange={setFilters} resetValue={{ ...EMPTY_FILTERS, eventId: ROSTER_SEASON_ID }} />
       </div>
 
-      <Card className="p-4">
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">Overall FAI names</div>
+      <details className="rounded-xl border border-line p-4">
+        <summary className="cursor-pointer text-sm font-bold text-muted">Overall FAI rating guide</summary>
         <div className="mt-2 flex flex-wrap gap-2">
           {OVERALL_RATING_BANDS.map((band) => (
             <div key={band.id} className="flex items-center gap-1.5 rounded-lg border border-line bg-panel-2/40 px-2.5 py-1.5">
@@ -134,7 +137,7 @@ export default function Leaderboards() {
             </div>
           ))}
         </div>
-      </Card>
+      </details>
 
       {provisional > 0 && (
         <div className="rounded-lg border border-flame/30 bg-flame/5 px-4 py-3 text-sm text-muted">
@@ -143,29 +146,14 @@ export default function Leaderboards() {
         </div>
       )}
 
-      <BoardGroup label="Official FAI Rankings">
-        {OFFICIAL_LEADERBOARDS.map((item) => (
-          <BoardChip key={item.id} active={boardId === item.id} onClick={() => setBoardId(item.id)}>
-            {item.title}
-          </BoardChip>
-        ))}
-      </BoardGroup>
-
-      <BoardGroup label="Available Category Rankings">
-        {CATEGORY_LEADERBOARDS.map((item) => (
-          <BoardChip key={item.id} active={boardId === item.id} onClick={() => setBoardId(item.id)}>
-            {item.title}
-          </BoardChip>
-        ))}
-      </BoardGroup>
-
-      <BoardGroup label="Available Test Rankings">
-        {TEST_LEADERBOARDS.map((item) => (
-          <BoardChip key={item.id} active={boardId === item.id} onClick={() => setBoardId(item.id)}>
-            {item.title}
-          </BoardChip>
-        ))}
-      </BoardGroup>
+      <label className="block text-sm font-bold text-muted">
+        Ranking metric
+        <select aria-label="Ranking metric" value={boardId} onChange={(event) => setBoardId(event.target.value)} className="mt-2 block w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-chalk sm:w-auto">
+          <optgroup label="Official FAI">{OFFICIAL_LEADERBOARDS.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</optgroup>
+          <optgroup label="Available categories">{CATEGORY_LEADERBOARDS.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</optgroup>
+          <optgroup label="Available tests">{TEST_LEADERBOARDS.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</optgroup>
+        </select>
+      </label>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
@@ -216,34 +204,5 @@ export default function Leaderboards() {
         </Card>
       </div>
     </div>
-  )
-}
-
-function BoardGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted">{label}</div>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-    </div>
-  )
-}
-
-function BoardChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${active ? 'bg-fai text-ink' : 'bg-panel-2 text-muted hover:text-chalk'}`}
-    >
-      {children}
-    </button>
   )
 }

@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('dashboard is populated from verified historical and partial testing records', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Historical Data Coverage' })).toBeVisible()
+  await page.getByText('Historical data coverage · all seasons and alumni', { exact: true }).click()
   await expect(page.getByText('164', { exact: true })).toBeVisible()
   await expect(page.getByText('20', { exact: true })).toBeVisible()
   await expect(page.getByText('770', { exact: true })).toBeVisible()

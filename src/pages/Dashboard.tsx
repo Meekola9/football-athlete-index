@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { rosterForScope, resultsForRoster, ROSTER_SEASON_ID } from '../lib/rosterScope'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { teamStats, type LeaderRow } from '../lib/leaderboards'
@@ -58,7 +59,9 @@ function CoverageCard({ label, value, sub }: { label: string; value: string | nu
 }
 
 export default function Dashboard() {
-  const { data, results, canEdit } = useStore()
+  const { data, resultsForEvent, canEdit } = useStore()
+  const roster = useMemo(() => rosterForScope(data.athletes, data.sessions), [data.athletes, data.sessions])
+  const results = useMemo(() => resultsForRoster(resultsForEvent(ROSTER_SEASON_ID), roster), [resultsForEvent, roster])
   const stats = useMemo(() => teamStats(results), [results])
   const available = useMemo(() => availableDashboardStats(results), [results])
   const topFive = results.filter((result) => result.rankEligible).slice(0, 5)
@@ -113,13 +116,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <header>
-        <div className="page-kicker">Program command center</div>
+        <div className="page-kicker">2026 season · Active roster</div>
         <h1 className="page-title">Coach dashboard</h1>
         <p className="page-intro">A clear view of readiness, verified testing, roster coverage, and the athletes driving the program.</p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card glow className="flex items-center gap-4 p-5">
-          <FaiRing score={stats.avgFai} size={104} label="Team FAI" />
+          {stats.completeCount > 0 ? <FaiRing score={stats.avgFai} size={104} label="Team FAI" /> : <span className="text-4xl text-muted">—</span>}
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Official Team Average</div>
             <div className="mt-1 flex items-center gap-2">
@@ -142,8 +145,8 @@ export default function Dashboard() {
         />
       </div>
 
-      <section>
-        <SectionTitle>Historical Data Coverage</SectionTitle>
+      <details className="rounded-xl border border-line p-4">
+        <summary className="cursor-pointer text-sm font-bold text-muted">Historical data coverage · all seasons and alumni</summary>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <CoverageCard label="Athletes" value={data.athletes.length} sub="Consolidated identities" />
           <CoverageCard label="Testing Events" value={data.events.length} sub="Verified event records" />
@@ -154,7 +157,7 @@ export default function Dashboard() {
             sub={latestEvent ? `${latestEvent.startDate} · ${latestEventEntries} entries` : 'No events yet'}
           />
         </div>
-      </section>
+      </details>
 
       {stats.provisionalCount > 0 && (
         <Card className="border-flame/30 bg-flame/5 p-4 text-sm text-muted">
@@ -165,10 +168,10 @@ export default function Dashboard() {
       <section>
         <SectionTitle>Available-Data Leaders · Verified Measurements</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <LeaderMini label="Fastest Recorded (40)" row={stats.fastest ?? available.fastest} sub="best available 40" />
-          <LeaderMini label="Strongest Available" row={stats.strongest ?? available.strongest} sub="relative STR" />
-          <LeaderMini label="Most Explosive Available" row={stats.mostExplosive ?? available.mostExplosive} sub="PWR score" />
-          <LeaderMini label="Best COD Available" row={stats.bestCod ?? available.bestCod} sub="COD score" />
+          <LeaderMini label="Fastest Recorded (40)" row={available.fastest} sub="best available 40" />
+          <LeaderMini label="Strongest Available" row={available.strongest} sub="relative STR" />
+          <LeaderMini label="Most Explosive Available" row={available.mostExplosive} sub="PWR score" />
+          <LeaderMini label="Best COD Available" row={available.bestCod} sub="COD score" />
           <LeaderMini label="Most Improved Official" row={stats.mostImproved} sub="complete FAI gain" />
         </div>
       </section>

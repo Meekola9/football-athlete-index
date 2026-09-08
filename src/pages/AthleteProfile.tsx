@@ -16,6 +16,7 @@ import { athleteGameDayBadgeSummary, type AthleteGameDayBadgeSummary } from '../
 import { SCORED_METRICS, flyTimeToMph } from '../data/scoring'
 import { CATEGORIES, CATEGORY_SHORT } from '../data/constants'
 import { Card, Pill, SectionTitle } from '../components/ui'
+import { rosterForScope, resultsForRoster } from '../lib/rosterScope'
 import { PlayerBadgeGallery } from '../components/PlayerBadges'
 import { GameDayBadgeAwardCard, GameDayBadgeCountChip } from '../components/GameDayBadges'
 import { awarenessBoostForScore, awarenessLevel, latestAwarenessFor } from '../lib/awarenessQuiz'
@@ -159,9 +160,10 @@ export default function AthleteProfile() {
   const [positionView, setPositionView] = useState<'primary' | 'secondary'>('primary')
   const { data, computed, resultsForEvent, gradeLabelFor, canEdit, teamName } = useStore()
   const athlete = id ? data.athletes.find((item) => item.id === id) : undefined
-  const result = id
-    ? resultsForEvent(ATHLETE_SEASON_ID).find((item) => item.athlete.id === id)
-    : undefined
+  const activeRoster = rosterForScope(data.athletes, data.sessions)
+  const seasonResults = resultsForEvent(ATHLETE_SEASON_ID)
+  const scopedResults = activeRoster.some((item) => item.id === id) ? resultsForRoster(seasonResults, activeRoster) : seasonResults
+  const result = id ? scopedResults.find((item) => item.athlete.id === id) : undefined
   const timeline = useMemo(
     () => (id
       ? athleteTimeline(computed, id).filter((item) => item.event.id === ATHLETE_SEASON_ID)
@@ -284,8 +286,6 @@ export default function AthleteProfile() {
         statusLabel={rankEligible ? 'Official 2026 score' : `${current.scoreStatus} · ${current.completionPct}% complete`}
       />
 
-      <PlayerUsageSummary athlete={athlete} />
-
       {positionArchetype && (
         <ArchetypeNameplate archetype={positionArchetype} positionLabel={`${selectedGroup} · ${athlete.position}`} />
       )}
@@ -298,6 +298,8 @@ export default function AthleteProfile() {
           {displayResult.awarenessBoostPct > 0 && <Pill tone="fai">Awareness +{displayResult.awarenessBoostPct}%</Pill>}
           {displayResult.efficiencyBoostPct > 0 && <Pill tone="up">Efficiency +{displayResult.efficiencyBoostPct}%</Pill>}
           {displayResult.efficiencyBoostPct < 0 && <Pill tone="down">Efficiency {displayResult.efficiencyBoostPct}%</Pill>}
+          <Pill>Tested baseline {displayResult.baseFai.toFixed(1)}</Pill>
+          <Pill>Adjusted FAI {current.fai.toFixed(1)}</Pill>
           {totalBoostPct !== 0 && <Pill tone="gold">{totalBoostPct > 0 ? 'Boosted' : 'Adjusted'} from {displayResult.baseFai.toFixed(1)}</Pill>}
           {typeof current.metrics.bestFly === 'number' && current.metrics.bestFly > 0 && <Pill tone="gold">Top Speed {flyTimeToMph(current.metrics.bestFly).toFixed(1)} mph</Pill>}
         </div>
@@ -320,7 +322,8 @@ export default function AthleteProfile() {
         <SectionTitle right={<Link to="/badges" className="text-xs font-bold text-gold hover:underline">Badge guide →</Link>}>
           2026 Testing Badges · {badges.length}
         </SectionTitle>
-        <PlayerBadgeGallery badges={badges} />
+        <PlayerBadgeGallery badges={badges.slice(0, 3)} />
+        {badges.length > 3 && <details className="mt-3"><summary className="cursor-pointer text-sm font-bold text-gold">View {badges.length - 3} more testing badges</summary><div className="mt-3"><PlayerBadgeGallery badges={badges.slice(3)} /></div></details>}
       </Card>
 
       <GameDayBadgeSection summary={gameBadges} />

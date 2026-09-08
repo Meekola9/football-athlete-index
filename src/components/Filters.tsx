@@ -39,13 +39,16 @@ function Select({
   value,
   onChange,
   children,
+  label,
 }: {
   value: string
   onChange: (value: string) => void
+  label: string
   children: React.ReactNode
 }) {
   return (
     <select
+      aria-label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       className="rounded-lg border border-line bg-panel px-3 py-1.5 text-sm font-semibold text-chalk outline-none focus:border-fai"
@@ -60,11 +63,13 @@ export function FilterBar({
   value,
   onChange,
   showEventFilter = true,
+  resetValue = EMPTY_FILTERS,
 }: {
   events: TestingEvent[]
   value: FilterState
   onChange: (filters: FilterState) => void
   showEventFilter?: boolean
+  resetValue?: FilterState
 }) {
   const set = (patch: Partial<FilterState>) => onChange({ ...value, ...patch })
   const active = value.grade || value.group || value.position || (showEventFilter && value.eventId)
@@ -73,7 +78,7 @@ export function FilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {showEventFilter && (
-        <Select value={value.eventId} onChange={(eventId) => set({ eventId })}>
+        <Select label="Testing season" value={value.eventId} onChange={(eventId) => set({ eventId })}>
           <option value="">Latest year per athlete</option>
           {orderedEvents.map((event) => (
             <option key={event.id} value={event.id}>
@@ -82,24 +87,25 @@ export function FilterBar({
           ))}
         </Select>
       )}
-      <Select value={value.group} onChange={(group) => set({ group })}>
+      <Select label="Position group" value={value.group} onChange={(group) => set({ group })}>
         <option value="">All Groups</option>
         {POSITION_GROUPS.map((group) => <option key={group}>{group}</option>)}
       </Select>
-      <Select value={value.grade} onChange={(grade) => set({ grade })}>
+      <Select label="Grade" value={value.grade} onChange={(grade) => set({ grade })}>
         <option value="">All Grades</option>
         {GRADES.map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}
       </Select>
       <input
         value={value.position}
         onChange={(event) => set({ position: event.target.value })}
+        aria-label="Filter by position"
         placeholder="Position…"
         className="w-28 rounded-lg border border-line bg-panel px-3 py-1.5 text-sm font-semibold text-chalk outline-none placeholder:text-muted focus:border-fai"
       />
       {active && (
         <button
           type="button"
-          onClick={() => onChange(EMPTY_FILTERS)}
+          onClick={() => onChange(resetValue)}
           className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted hover:text-chalk"
         >
           Clear

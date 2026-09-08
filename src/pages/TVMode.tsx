@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore'
 import { ALL_LEADERBOARDS, positionGroupBoards, type LeaderRow } from '../lib/leaderboards'
 import type { AthleteResult } from '../types'
 import { Avatar } from '../components/ui'
+import { rosterForScope, resultsForRoster, ROSTER_SEASON_ID } from '../lib/rosterScope'
 import { OverallRatingName } from '../components/OverallRatingName'
 
 const ROTATE_MS = 9000
@@ -140,7 +141,8 @@ const SLIDE_DEFS: Slide[] = [
 ]
 
 export default function TVMode() {
-  const { results } = useStore()
+  const { data, resultsForEvent } = useStore()
+  const results = useMemo(() => resultsForRoster(resultsForEvent(ROSTER_SEASON_ID), rosterForScope(data.athletes, data.sessions)), [data.athletes, data.sessions, resultsForEvent])
   const nav = useNavigate()
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -305,7 +307,7 @@ function BigCard({
             : `${result.rankEligible ? 'Complete battery' : 'Partial battery'} · available measurement`}
         </div>
       </div>
-      {official && (
+      {official && metricLabel !== 'FAI' && (
         <div className="hidden text-right sm:block">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted">FAI</div>
           <div className="text-2xl font-black nums text-fai">{result.current.fai.toFixed(1)}</div>

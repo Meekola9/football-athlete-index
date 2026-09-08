@@ -74,8 +74,8 @@ export default function FilmLibrary() {
         <div className="text-[11px] font-black uppercase tracking-[0.25em] text-fai">FAI Film Intelligence</div>
         <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-chalk sm:text-4xl">Player Comparisons & Film Study</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">Find the professional and college models attached to every existing FAI archetype. These are film-study references—not claims that testing alone proves technique, instincts, production, or football IQ.</p>
+            <h1 className="text-3xl font-black tracking-tight text-chalk sm:text-4xl">Player Study Guide</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">Browse professional and college study references for each FAI archetype. This guide contains study topics, not a playable clip collection. These are film-study references—not claims that testing alone proves technique, instincts, production, or football IQ.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link to="/film" className="rounded-xl border border-fai/40 bg-fai/10 px-4 py-2 text-sm font-black text-fai">Open Film Room</Link>

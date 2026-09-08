@@ -27,7 +27,7 @@ export const OVERALL_RATING_BANDS: readonly OverallRatingBand[] = [
   {
     id: 'dawg',
     label: 'X Factor',
-    rangeLabel: '90–95',
+    rangeLabel: '90 to <96',
     min: 90,
     tone: 'dawg',
     description: 'An exceptional athlete whose complete profile can consistently change a game.',
@@ -35,7 +35,7 @@ export const OVERALL_RATING_BANDS: readonly OverallRatingBand[] = [
   {
     id: 'difference-maker',
     label: 'Superstar',
-    rangeLabel: '80–89',
+    rangeLabel: '80 to <90',
     min: 80,
     tone: 'difference',
     description: 'A high-level athlete with multiple traits that create a clear on-field advantage.',
@@ -43,7 +43,7 @@ export const OVERALL_RATING_BANDS: readonly OverallRatingBand[] = [
   {
     id: 'developing-talent',
     label: 'Star',
-    rangeLabel: '70–79',
+    rangeLabel: '70 to <80',
     min: 70,
     tone: 'developing',
     description: 'A strong athletic foundation with clear impact traits and room for continued growth.',
@@ -51,7 +51,7 @@ export const OVERALL_RATING_BANDS: readonly OverallRatingBand[] = [
   {
     id: 'building-block',
     label: 'Normal',
-    rangeLabel: '65–69',
+    rangeLabel: '65 to <70',
     min: 65,
     tone: 'building',
     description: 'A functional overall profile that meets the normal FAI performance range.',
@@ -59,7 +59,7 @@ export const OVERALL_RATING_BANDS: readonly OverallRatingBand[] = [
   {
     id: 'needs-work',
     label: 'Needs Work',
-    rangeLabel: '64 and below',
+    rangeLabel: 'Below 65',
     min: 0,
     tone: 'needs-work',
     description: 'The current testing profile has multiple areas that need focused development.',
