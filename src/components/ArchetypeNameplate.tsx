@@ -69,7 +69,7 @@ export function ArchetypeNameplate({
 
       {filmModel && (
         <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-fai/25 bg-fai/5 p-4 text-left">
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-fai">You play most similarly to</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-fai">Suggested film-study reference</div>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Professional model</div>

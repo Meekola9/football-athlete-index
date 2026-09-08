@@ -57,8 +57,10 @@ describe('sideline dashboard', () => {
       { id: 'e3', athleteId: 'a3', type: 'missed_tackle', date: '2026-01-01' }, // negative, not counted
     ]
     const report = buildSidelineReport(plays, events, undefined)
-    // 2 positive havoc events over 3 defensive snaps
-    expect(num(report, 'havoc').value).toBeCloseTo(2 / 3)
+    // Special teams are excluded from defensive scrimmage snaps.
+    expect(num(report, 'havoc').value).toBe(1)
+    expect(num(report, 'havoc').display).toBe('1.00')
+    expect(report.defensiveSnaps).toBe(2)
     // hidden margin: +15 - 8 = +7
     expect(num(report, 'hidden').value).toBe(7)
     expect(num(report, 'hidden').display).toBe('+7 yds')
@@ -89,5 +91,42 @@ describe('sideline dashboard', () => {
     const empty = buildSidelineReport([], [], 'Nobody')
     expect(num(empty, 'success').display).toBe('—')
     expect(num(empty, 'success').sample).toBe(0)
+  })
+})
+
+
+describe('missing sideline measurements', () => {
+  it('does not present an event count as a rate without defensive snaps', () => {
+    const report = buildSidelineReport([], [{ id: 's', athleteId: 'a', type: 'sack', date: '2026-09-01' }])
+    expect(num(report, 'havoc').display).toBe('—')
+    expect(num(report, 'havoc').sample).toBe(0)
+    expect(num(report, 'havoc').hint).toContain('1 positive havoc events')
+  })
+
+  it('requires measurements from both sides before displaying a margin', () => {
+    const report = buildSidelineReport([
+      { id: 'o', side: 'offense', call: 'run', gain: 14 },
+      { id: 'd', side: 'defense', call: 'pass' },
+    ], [])
+    expect(num(report, 'explosive').display).toBe('—')
+    expect(num(report, 'negative').display).toBe('—')
+    expect(num(report, 'negative').sample).toBe(0)
+  })
+
+  it('requires a call for explosive thresholds but accepts recorded zero gains', () => {
+    const report = buildSidelineReport([
+      { id: 'o', side: 'offense', gain: 14 },
+      { id: 'd', side: 'defense', gain: 0 },
+    ], [])
+    expect(num(report, 'explosive').display).toBe('—')
+    expect(num(report, 'negative').display).toBe('0')
+    expect(num(report, 'negative').sample).toBe(2)
+  })
+
+  it('filters havoc events to the selected opponent', () => {
+    const report = buildSidelineReport([{ id: 'd', side: 'defense', opponent: 'North', call: 'run' }], [
+      { id: 's', athleteId: 'a', type: 'sack', date: '2026-09-01', opponent: 'South' },
+    ], 'North')
+    expect(num(report, 'havoc').display).toBe('0.00')
   })
 })

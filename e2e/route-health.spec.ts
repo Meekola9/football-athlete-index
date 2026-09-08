@@ -6,7 +6,7 @@ import { test, expect, type Page } from '@playwright/test'
 // renamed metric id) that unit tests and typechecking miss.
 
 const ROUTES = [
-  '/', '/leaderboards', '/athletes', '/deployment', '/playmakers', '/film', '/development',
+  '/', '/leaderboards', '/athletes', '/deployment', '/playmakers', '/film', '/film-library', '/sideline', '/development',
   '/stats', '/quiz', '/vertical', '/badges', '/archetypes', '/entry', '/import',
   '/data', '/staff', '/account/setup', '/tv',
 ]

@@ -18,7 +18,7 @@ import Lineup from './Lineup'
 import { usePageMemory, usePageScrollMemory } from '../hooks/usePageMemory'
 import type { Athlete, AthleteResult, Category } from '../types'
 
-const ATHLETE_SEASON_ID = 'season-2026'
+import { rosterForScope, resultsForRoster, type RosterScope, ROSTER_SEASON_ID as ATHLETE_SEASON_ID } from '../lib/rosterScope'
 
 /** Roster sort: overall, name, or any single FAI category (for building packages). */
 type SortKey = 'fai' | 'name' | Category
@@ -39,7 +39,10 @@ export default function Athletes() {
   const [sort, setSort] = usePageMemory<SortKey>('fai:athletes:sort', 'fai')
   usePageScrollMemory('fai:athletes:scroll')
 
-  const seasonResults = resultsForEvent(ATHLETE_SEASON_ID)
+  const [scope, setScope] = usePageMemory<RosterScope>('fai:athletes:scope', 'active')
+  const [query, setQuery] = usePageMemory('fai:athletes:query', '')
+  const roster = useMemo(() => rosterForScope(data.athletes, data.sessions, scope), [data.athletes, data.sessions, scope])
+  const seasonResults = scope === 'active' ? resultsForRoster(resultsForEvent(ATHLETE_SEASON_ID), roster) : resultsForEvent(ATHLETE_SEASON_ID)
   const filteredResults = useMemo(
     () => applyFilters(seasonResults, filters),
     [seasonResults, filters],
@@ -50,8 +53,9 @@ export default function Athletes() {
   )
 
   const list = useMemo<Row[]>(() => {
-    const rows = data.athletes
+    const rows = roster
       .filter((athlete) => {
+        if (!athlete.name.toLowerCase().includes(query.trim().toLowerCase())) return false
         if (filters.grade && String(athlete.grade) !== filters.grade) return false
         if (
           filters.group
@@ -67,10 +71,10 @@ export default function Athletes() {
       .map((athlete) => ({ athlete, result: resultMap.get(athlete.id) }))
 
     rows.sort((a, b) => {
+      if (sort === 'name') return a.athlete.name.localeCompare(b.athlete.name)
       if (!a.result && !b.result) return a.athlete.name.localeCompare(b.athlete.name)
       if (!a.result) return 1
       if (!b.result) return -1
-      if (sort === 'name') return a.athlete.name.localeCompare(b.athlete.name)
       if (isCategorySort(sort)) {
         const diff = b.result.current.categories[sort] - a.result.current.categories[sort]
         return diff !== 0 ? diff : a.athlete.name.localeCompare(b.athlete.name)
@@ -79,7 +83,7 @@ export default function Athletes() {
       return b.result.current.fai - a.result.current.fai
     })
     return rows
-  }, [data.athletes, filters, resultMap, sort])
+  }, [roster, query, filters, resultMap, sort])
 
   if (view === 'lineup') {
     return (
@@ -106,12 +110,13 @@ export default function Athletes() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="page-kicker">2026 roster · {data.athletes.length} athletes</div>
+          <div className="page-kicker">2026 testing · {scope} roster · {list.length} of {roster.length} athletes</div>
           <h1 className="page-title">Athlete personnel</h1>
           <p className="page-intro">Build position groups, testing profiles, and game-plan deployment from one roster.</p>
         </div>
         <div className="flex items-center gap-2">
           <select
+            aria-label="Sort athletes"
             value={sort}
             onChange={(event) => setSort(event.target.value as SortKey)}
             className="rounded-lg border border-line bg-panel px-3 py-1.5 text-sm font-semibold outline-none focus:border-fai"
@@ -135,6 +140,14 @@ export default function Athletes() {
         <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted">These labels describe meeting-room load, weekly installation, and game-plan responsibility. They are not a ranking of toughness or talent.</p>
         <div className="mt-3"><PlayerUsageGuide compact /></div>
       </details>
+
+      <div className="flex flex-wrap gap-2">
+        <input type="search" aria-label="Search athletes by name" placeholder="Search athlete name…" value={query} onChange={(event) => setQuery(event.target.value)} className="rounded-lg border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-fai" />
+        <select aria-label="Roster scope" value={scope} onChange={(event) => setScope(event.target.value as RosterScope)} className="rounded-lg border border-line bg-panel px-3 py-2 text-sm">
+          <option value="active">Active roster</option><option value="alumni">Alumni archive</option><option value="all">All athletes</option>
+        </select>
+      </div>
+      <p className="text-xs text-muted">Active status follows recorded graduation years; athletes without a dated grade snapshot remain visible. Use the season selector in Rankings for historical testing.</p>
 
       <FilterBar events={[]} value={filters} onChange={setFilters} showEventFilter={false} />
 
@@ -173,17 +186,17 @@ export default function Athletes() {
                       <span>· {gradeLabelFor(athlete)}</span>
                     </div>
                     <div className="mt-1 text-xs text-muted">
-                      {formatHeight(athlete.heightIn)} · {athlete.weightLbs} lbs
+                      {athlete.heightIn > 0 ? formatHeight(athlete.heightIn) : 'Height not recorded'} · {athlete.weightLbs > 0 ? `${athlete.weightLbs} lbs` : 'Weight not recorded'}
                       {result?.rankEligible ? ` · 2026 Rank #${result.teamRank}` : ''}
                     </div>
                     {scoreBreakdown?.secondaryGroup && typeof scoreBreakdown.secondaryScore === 'number' && (
                       <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-line bg-panel-2/35 p-2 text-center">
                         <div>
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-muted">{athlete.position || scoreBreakdown.primaryGroup} · {scoreBreakdown.primaryPct}%</div>
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-muted">Baseline {athlete.position || scoreBreakdown.primaryGroup} · {scoreBreakdown.primaryPct}%</div>
                           <div className="text-sm font-black nums text-fai">{scoreBreakdown.primaryScore.toFixed(1)}</div>
                         </div>
                         <div>
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-muted">{athlete.secondaryPosition || scoreBreakdown.secondaryGroup} · {scoreBreakdown.secondaryPct}%</div>
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-muted">Baseline {athlete.secondaryPosition || scoreBreakdown.secondaryGroup} · {scoreBreakdown.secondaryPct}%</div>
                           <div className="text-sm font-black nums text-gold">{scoreBreakdown.secondaryScore.toFixed(1)}</div>
                         </div>
                       </div>

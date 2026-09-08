@@ -40,11 +40,9 @@ const PUBLIC_NAV: NavItem[] = [
   { to: '/athletes', label: 'Athletes' },
   { to: '/playmakers', label: 'Playmakers' },
   { to: '/film', label: 'Film Room' },
-  { to: '/film-library', label: 'Film Library' },
+  { to: '/film-library', label: 'Player Study Guide' },
   { to: '/development', label: 'Development' },
   { to: '/stats', label: 'Stats Guide' },
-  { to: '/entry', label: 'Enter Testing' },
-  { to: '/data', label: 'Data' },
 ]
 
 function Brand() {
@@ -75,7 +73,7 @@ function navForAccount(viewerMode: boolean, role: string | undefined, capabiliti
       { to: '/account/profile', label: 'My Profile', end: true },
       { to: '/quiz', label: 'Awareness Quiz' },
       { to: '/leaderboards', label: 'Rankings' },
-      { to: '/film-library', label: 'Film Library' },
+      { to: '/film-library', label: 'Player Study Guide' },
       { to: '/development', label: 'Development' },
       { to: '/stats', label: 'Stats Guide' },
     ]
@@ -90,7 +88,7 @@ function navForAccount(viewerMode: boolean, role: string | undefined, capabiliti
   if (capabilities.canManageRoster || capabilities.canManageTesting || role === 'owner' || role === 'admin') nav.push({ to: '/deployment', label: 'Deployment' })
   if (capabilities.canManageAwards || role === 'owner' || role === 'admin') nav.push({ to: '/playmakers', label: 'Playmakers' })
   if (capabilities.canManageFilm || role === 'owner' || role === 'admin') nav.push({ to: '/film', label: 'Film Room' })
-  nav.push({ to: '/film-library', label: 'Film Library' }, { to: '/development', label: 'Development' }, { to: '/stats', label: 'Stats Guide' })
+  nav.push({ to: '/film-library', label: 'Player Study Guide' }, { to: '/development', label: 'Development' }, { to: '/stats', label: 'Stats Guide' })
   if (capabilities.canManageTesting) nav.push({ to: '/entry', label: 'Enter Testing' })
   if (capabilities.canManageRoster) nav.push({ to: '/import', label: 'Bulk Import' })
   if (capabilities.canManageData) nav.push({ to: '/data', label: 'Data' })
@@ -120,7 +118,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-2 md:hidden">
           <ConnectivityBadge />
-          <NavLink to="/film-library" className="grid h-9 min-w-9 place-items-center rounded-lg border border-fai/30 bg-fai/10 px-2 text-[10px] font-black text-fai">FILM</NavLink>
+          <NavLink to="/film-library" className="grid h-9 min-w-9 place-items-center rounded-lg border border-fai/30 bg-fai/10 px-2 text-[10px] font-black text-fai">STUDY</NavLink>
           <NavLink to={access.role === 'athlete' ? '/account/profile' : '/stats'} className="grid h-9 min-w-9 place-items-center rounded-lg border border-line bg-panel px-2 text-[10px] font-black text-muted">{access.role === 'athlete' ? 'ME' : 'GUIDES'}</NavLink>
           {access.role !== 'athlete' && <NavLink to="/tv" className="grid h-9 min-w-9 place-items-center rounded-lg border border-flame/40 bg-flame/10 px-2 text-xs font-black text-flame">TV</NavLink>}
         </div>
@@ -223,7 +221,8 @@ function LoginScreen() {
 }
 
 function PermissionDenied({ message = 'Your FAI account does not have permission to open this section.' }: { message?: string }) {
-  return <div className="mx-auto max-w-xl rounded-2xl border border-down/30 bg-panel p-6 text-center"><h1 className="text-xl font-black text-chalk">Permission required</h1><p className="mt-2 text-sm text-muted">{message}</p><NavLink to="/" className="mt-4 inline-block rounded-xl border border-line px-4 py-2 text-sm font-bold text-chalk">Return to FAI</NavLink></div>
+  const { viewerMode } = useStore()
+  return <div className="mx-auto max-w-xl rounded-2xl border border-down/30 bg-panel p-6 text-center"><h1 className="text-xl font-black text-chalk">{viewerMode ? 'Sign in required' : 'Permission required'}</h1><p className="mt-2 text-sm text-muted">{message}</p>{viewerMode && <NavLink to="/login" className="mt-4 inline-block rounded-xl bg-fai px-4 py-2 text-sm font-bold text-ink">Sign in to your account</NavLink>}<NavLink to="/" className="mt-4 inline-block rounded-xl border border-line px-4 py-2 text-sm font-bold text-chalk">Return to FAI</NavLink></div>
 }
 
 function PersistentFilmRoute({ active, children }: { active: boolean; children: React.ReactNode }) {

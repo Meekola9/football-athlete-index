@@ -88,16 +88,23 @@ export function buildSidelineReport(
   opponent?: string,
 ): SidelineReport {
   const gamePlays = opponent ? filmPlays.filter((p) => (p.opponent ?? '') === opponent) : filmPlays
-  const offense = gamePlays.filter(isOffense)
-  const defense = gamePlays.filter(isDefense)
+  const scrimmage = gamePlays.filter((p) => p.call !== 'special')
+  const offense = scrimmage.filter(isOffense)
+  const defense = scrimmage.filter(isDefense)
+  const measuredOffense = offense.filter((p) => num(p.gain))
+  const measuredDefense = defense.filter((p) => num(p.gain))
+  const explosiveOffense = measuredOffense.filter((p) => Boolean(p.call))
+  const explosiveDefense = measuredDefense.filter((p) => Boolean(p.call))
+  const hasExplosiveMargin = explosiveOffense.length > 0 && explosiveDefense.length > 0
+  const hasNegativeMargin = measuredOffense.length > 0 && measuredDefense.length > 0
 
   // 1. Offensive success rate
   const scored = offense.map(playSuccess).filter((s): s is boolean => s !== null)
   const successRate = scored.length ? scored.filter(Boolean).length / scored.length : 0
 
   // 2. Explosive-play margin (ours on offense − allowed on defense)
-  const ourExplosive = offense.filter(isExplosive).length
-  const allowedExplosive = defense.filter(isExplosive).length
+  const ourExplosive = explosiveOffense.filter(isExplosive).length
+  const allowedExplosive = explosiveDefense.filter(isExplosive).length
   const explosiveMargin = ourExplosive - allowedExplosive
 
   // 3. Negative-play margin (forced on defense − suffered on offense)
@@ -130,13 +137,13 @@ export function buildSidelineReport(
     },
     {
       key: 'explosive', label: 'Explosive-play margin',
-      display: signed(explosiveMargin), value: explosiveMargin, sample: offense.length + defense.length,
-      hint: `runs ≥${SIDELINE_DEFAULTS.explosiveRunYds}, passes ≥${SIDELINE_DEFAULTS.explosivePassYds}; ours − allowed`,
+      display: hasExplosiveMargin ? signed(explosiveMargin) : '—', value: explosiveMargin, sample: hasExplosiveMargin ? explosiveOffense.length + explosiveDefense.length : 0,
+      hint: `runs ≥${SIDELINE_DEFAULTS.explosiveRunYds}, passes ≥${SIDELINE_DEFAULTS.explosivePassYds}; ours − allowed. Requires call and gain on both sides`,
     },
     {
       key: 'negative', label: 'Negative-play margin',
-      display: signed(negativeMargin), value: negativeMargin, sample: offense.length + defense.length,
-      hint: 'plays behind the line: forced on defense − suffered on offense',
+      display: hasNegativeMargin ? signed(negativeMargin) : '—', value: negativeMargin, sample: hasNegativeMargin ? measuredOffense.length + measuredDefense.length : 0,
+      hint: 'plays behind the line: forced on defense − suffered on offense. Requires gain on both sides',
     },
     {
       key: 'box', label: 'Box / run advantage',
@@ -144,10 +151,10 @@ export function buildSidelineReport(
       hint: `share of our runs into a light box (≤${SIDELINE_DEFAULTS.lightBox} defenders)`,
     },
     {
-      key: 'havoc', label: 'Defensive havoc rate',
-      display: defense.length ? pct(havocRate) : (havocEvents ? `${havocEvents}` : '—'),
+      key: 'havoc', label: 'Havoc events per snap',
+      display: defense.length ? havocRate.toFixed(2) : '—',
       value: havocRate, sample: defense.length,
-      hint: 'TFL, sacks, INTs, forced fumbles, PBUs per defensive snap',
+      hint: `${havocEvents} positive havoc events / ${defense.length} charted defensive snaps. Separate logs; multiple events may describe one snap.`,
     },
     {
       key: 'hidden', label: 'Hidden-yardage margin',

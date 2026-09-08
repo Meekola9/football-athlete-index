@@ -231,6 +231,11 @@ export function buildResults(
     })
   }
 
+  return rankResults(results)
+}
+
+/** Assign official ranks within the supplied roster scope. Mutates only these result objects. */
+export function rankResults(results: AthleteResult[]): AthleteResult[] {
   const eligible = results
     .filter((result) => result.rankEligible)
     .sort((a, b) => b.current.fai - a.current.fai)

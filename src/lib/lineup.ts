@@ -258,13 +258,22 @@ export function generateBestLineup(
     used.add(athlete.id)
   }
 
-  for (const lineupSlot of slots) {
-    if (assignments[lineupSlot.id]) continue
-    const candidate = candidatesForSlot(athletes, ratings, lineupSlot)
-      .find((item) => !used.has(item.athlete.id))
-    if (!candidate) continue
-    assignments[lineupSlot.id] = candidate
-    used.add(candidate.athlete.id)
+  const candidates = new Map(slots.map((lineupSlot) => [lineupSlot.id, candidatesForSlot(athletes, ratings, lineupSlot)]))
+  // Fill exact-position matches first, starting with slots that have the fewest.
+  // This prevents an early group-fit slot from taking another slot's natural player.
+  const directSlots = [...slots].sort((a, b) =>
+    candidates.get(a.id)!.filter((item) => item.fit >= 94).length
+    - candidates.get(b.id)!.filter((item) => item.fit >= 94).length,
+  )
+  for (const directOnly of [true, false]) {
+    for (const lineupSlot of directOnly ? directSlots : slots) {
+      if (assignments[lineupSlot.id]) continue
+      const candidate = candidates.get(lineupSlot.id)!
+        .find((item) => !used.has(item.athlete.id) && (!directOnly || item.fit >= 94))
+      if (!candidate) continue
+      assignments[lineupSlot.id] = candidate
+      used.add(candidate.athlete.id)
+    }
   }
 
   return assignments

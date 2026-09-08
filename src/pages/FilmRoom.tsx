@@ -842,12 +842,16 @@ export default function FilmRoom() {
       triggerDownload(html, 'text/html;charset=utf-8', `scouting-${slug}.html`)
     }
   }
+  const selectedFilmPlays = useMemo(
+    () => data.filmPlays.filter((play) => !opponentFilter || (play.opponent ?? '') === opponentFilter),
+    [data.filmPlays, opponentFilter],
+  )
   const recent = useMemo(
     () =>
-      [...data.filmPlays]
+      [...selectedFilmPlays]
         .sort((a, b) => `${b.date ?? ''}${b.createdAt ?? ''}`.localeCompare(`${a.date ?? ''}${a.createdAt ?? ''}`))
         .slice(0, 14),
-    [data.filmPlays],
+    [selectedFilmPlays],
   )
 
   const conceptOptions = conceptOptionsForCall(form.call, filmCatalog)
@@ -1473,11 +1477,13 @@ export default function FilmRoom() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Plays charted" value={report.totalPlays} accent="fai" />
-        <StatTile label="Run rate" value={`${Math.round(report.runShare * 100)}%`} accent="flame" />
-        <StatTile label="Pass rate" value={`${Math.round(report.passShare * 100)}%`} accent="fai" />
+        <StatTile label="Saved plays" value={selectedFilmPlays.length} accent="fai" />
+        <StatTile label="Run rate" value={report.totalPlays ? `${Math.round(report.runShare * 100)}%` : '—'} accent="flame" />
+        <StatTile label="Pass rate" value={report.totalPlays ? `${Math.round(report.passShare * 100)}%` : '—'} accent="fai" />
         <StatTile label="Opponents" value={opponents.length} accent="gold" />
       </div>
+
+      <p className="text-sm text-muted">Rates use {report.totalPlays} saved scrimmage plays with a run/pass call. Annotation-only plays and special teams are excluded from tendencies. The opponent filter applies to saved plays and tendencies.</p>
 
       <HudlImportWizard />
 
@@ -2322,7 +2328,7 @@ Set the pre-snap frame, create one player, arm auto-follow, and tap that player 
 
       {report.totalPlays === 0 ? (
         <Card className="p-8 text-center text-sm text-muted">
-          No plays charted yet.{canEdit ? ' Load film above and tag a play to start the tendency report.' : ''}
+          {selectedFilmPlays.length ? 'Plays are saved, but none have a scrimmage call for this tendency report.' : 'No saved plays for this opponent selection.'}{canEdit ? ' Tag the run/pass call on a play to start the tendency report.' : ''}
         </Card>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
